@@ -92,20 +92,6 @@ export default function SupplierForm() {
               </div>
             </div> */}
 
-            {/* Handover To */}
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium leading-6 text-gray-900">
-                Handover To
-              </label>
-              <div className="mt-2">
-                <select className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900">
-                  {users.map((user) => (
-                    <option key={user.id}>{user.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             {/* Created User (Auto-selected) */}
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium leading-6 text-gray-900">
@@ -114,7 +100,7 @@ export default function SupplierForm() {
               <div className="mt-2">
                 <input
                   type="text"
-                  value={loggedUser}
+                  value=""
                   readOnly
                   disabled
                   className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
@@ -123,27 +109,6 @@ export default function SupplierForm() {
             </div>
 
             {/* Created At (Auto-generated) */}
-
-            {/* Advance Payment */}
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium leading-6 text-gray-900">
-                Advance Payment
-              </label>
-              <div className="mt-2">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isAdvancePayment}
-                    onChange={() => setIsAdvancePayment(!isAdvancePayment)}
-                    className="sr-only peer"
-                  />
-                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  <span className="ml-3 text-sm font-medium text-gray-900">
-                    {isAdvancePayment ? "" : ""}
-                  </span>
-                </label>
-              </div>
-            </div>
 
             {/* Complete Status - Toggle Switch */}
             <div className="sm:col-span-2">
@@ -212,7 +177,6 @@ export default function SupplierForm() {
           </button>
           <button
             type="submit"
-            onClick={handleSubmit}
             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
           >
             Save
