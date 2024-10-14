@@ -9,7 +9,7 @@ export default function Navbar() {
       <div className="text-lg font-bold">
         <Image src={Logo} alt="Logo" width={200} height={10} className="" />
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 text-white">
         <input
           type="text"
           placeholder="Search..."
