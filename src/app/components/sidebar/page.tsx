@@ -25,8 +25,8 @@ const Sidebar = () => {
       icon: <HiOutlineUsers />,
     },
     {
-      label: "Test",
-      path: "/test",
+      label: "Master Records",
+      path: "/MasterRecords",
       icon: <HiOutlineUsers />,
     },
   ];
