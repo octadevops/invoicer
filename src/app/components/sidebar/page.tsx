@@ -24,11 +24,6 @@ const Sidebar = () => {
       path: "/users",
       icon: <HiOutlineUsers />,
     },
-    {
-      label: "Test",
-      path: "/test",
-      icon: <HiOutlineUsers />,
-    },
   ];
 
   return (
