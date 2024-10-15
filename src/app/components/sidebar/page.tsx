@@ -27,7 +27,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-slate-800 min-h-screen py-4 px-6 text-slate-100">
+    <aside className="sticky left-0 top-0  w-64 bg-slate-800 h-screen py-4 px-6 text-slate-100 ">
       <ul className="space-y-2">
         {sidebarData.map((item, index) => (
           <li key={item.label}>
