@@ -5,7 +5,7 @@ import Logo from "@/src/app/images/NLM LOGO.png";
 
 export default function Navbar() {
   return (
-    <nav className="bg-slate-800 shadow-lg p-4 flex justify-between items-center">
+    <nav className="sticky top-0 z-50 bg-slate-800 shadow-lg p-4 flex justify-between items-center">
       <div className="text-lg font-bold">
         <Image src={Logo} alt="Logo" width={200} height={10} className="" />
       </div>
