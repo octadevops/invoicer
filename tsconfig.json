@@ -4,6 +4,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "noImplicitAny": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -19,8 +20,20 @@
     ],
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "target": "ES2017"
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/app/login/page.jsx",
+    "src/app/users/page.jsx",
+    "src/app/suppliers/page.jsx",
+    "src/app/reports/page.jsx",
+    "src/app/invoices/page.jsx",
+    "src/app/components/CardComp.jsx"
+  ],
   "exclude": ["node_modules"]
 }
