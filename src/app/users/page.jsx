@@ -15,6 +15,7 @@ import {
 } from "../services/userService";
 import "react-toastify/dist/ReactToastify.css";
 import Modal from "../components/Modal";
+import KEY_GENERATOR from "../functions/functions";
 
 export default function UserForm() {
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -325,7 +326,7 @@ export default function UserForm() {
                       <option value="Manager">Manager</option>
                       <option value="Executive">Executive</option>
                       <option value="Receiver">Receiver</option>
-                      <option value="Cashier">Receiver</option>
+                      <option value="Cashier">Cashier</option>
                     </select>
                   </div>
                 </div>
@@ -402,7 +403,7 @@ export default function UserForm() {
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.user_id}>
+                  <tr key={KEY_GENERATOR(user.user_id)}>
                     <td className="border px-4 py-2">{user.id}</td>
                     <td className="border px-4 py-2">{user.name}</td>
                     <td className="border px-4 py-2">{user.email}</td>

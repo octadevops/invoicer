@@ -8,15 +8,28 @@ import {
   updateDocumentStatus,
 } from "../services/approvalService";
 import { useAuth } from "@/src/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function ApprovalPage() {
-  const { user } = useAuth(); // Logged-in user
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
   const [documents, setDocuments] = useState([]);
   const [columns, setColumns] = useState([]);
   const [pinModal, setPinModal] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState(null); // Document to approve
-  const [enteredPin, setEnteredPin] = useState(""); // PIN entered by user
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [enteredPin, setEnteredPin] = useState("");
   const [actionType, setActionType] = useState("");
+
+  // Redirect if user is not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const fetchDocuments = async () => {
     if (!user) {
@@ -28,18 +41,15 @@ export default function ApprovalPage() {
       const username = user?.username || "";
       let response;
 
-      // Fetch documents based on user role
       if (user.role === "Receiver") {
-        // For Receiver, only fetch documents related to their user ID
         response = await getApprovalDocuments(3, username);
       } else {
-        // For Administrator or Manager, fetch all documents
         response = await getApprovalDocuments(3);
       }
 
       if (response && response.length > 0) {
         setDocuments(response);
-        setColumns(Object.keys(response[0])); // Extract keys as column names
+        setColumns(Object.keys(response[0]));
       } else {
         setDocuments([]);
         setColumns([]);
@@ -52,7 +62,6 @@ export default function ApprovalPage() {
 
   useEffect(() => {
     if (user) {
-      // Restrict access based on user roles
       if (
         user.role === "Administrator" ||
         user.role === "Manager" ||
@@ -61,92 +70,56 @@ export default function ApprovalPage() {
         fetchDocuments();
       } else {
         toast.error("Unauthorized Access.");
-        setLoading(false);
       }
     } else {
       toast.error("No user logged in.");
-      setLoading(false);
     }
   }, [user]);
 
-  // Handle approval process
-  const handleAction = async () => {
-    if (!selectedDoc || !enteredPin) {
-      toast.error("Please enter your PIN.");
-      return;
-    }
-
-    try {
-      const requiredStatus = actionType === "paymentReady" ? "2" : "1"; // Check required status
-      if (selectedDoc.status !== requiredStatus) {
-        toast.error(
-          `Cannot mark as ${
-            actionType === "paymentReady" ? "Payment Ready" : "Received"
-          } without completing the previous step.`
-        );
-        return;
-      }
-
-      const response = await updateDocumentStatus(selectedDoc.id, enteredPin);
-      if (response.success) {
-        toast.success(
-          `Document marked as ${
-            actionType === "paymentReady" ? "Payment Ready" : "Received"
-          }!`
-        );
-        fetchDocuments(); // Refresh the documents list
-      } else {
-        toast.error(response.message || "Failed to update status.");
-      }
-    } catch (error) {
-      console.error("Error approving document:", error);
-      toast.error("Error processing approval.");
-    } finally {
-      setPinModal(false); // Close the modal
-      setSelectedDoc(null);
-      setEnteredPin("");
-    }
-  };
-  // Decode the JWT token to read the 'exp' claim
+  // Decode the JWT token
   const decodeJwt = (token) => {
     const base64Url = token.split(".")[1];
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split("")
-        .map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
         .join("")
     );
-
     return JSON.parse(jsonPayload);
   };
 
-  const checkTokenExpiration = () => {
-    const token = localStorage.getItem("authToken");
-    // console.log("token : ", localStorage.getItem("authToken"));
+  // Check token expiration and call logout if invalid
+  useEffect(() => {
+    const checkTokenExpiration = () => {
+      const token = localStorage.getItem("authToken");
 
-    if (!token) {
-      console.error("No token found in localStorage");
-      return;
-    }
+      if (!token) {
+        toast.error("No authentication token found. Redirecting to login.");
+        logout();
+        return;
+      }
 
-    const decodedToken = decodeJwt(token);
-    const exp = decodedToken.exp * 1000; // Convert exp to milliseconds
-    const currentTime = Date.now();
+      try {
+        const decodedToken = decodeJwt(token);
+        const exp = decodedToken.exp * 1000;
+        const currentTime = Date.now();
 
-    if (exp < currentTime) {
-      console.log("Token is expired.");
-      // Optionally, you can log out the user or refresh the token here
-      localStorage.removeItem("authToken"); // Optionally clear expired token
-    } else {
-      console.log("Token is still valid.");
-    }
-  };
+        if (exp < currentTime) {
+          localStorage.removeItem("authToken");
+          toast.error("Session expired. Redirecting to login.");
+          logout();
+        }
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        toast.error("Invalid authentication token. Redirecting to login.");
+        localStorage.removeItem("authToken");
+        logout();
+      }
+    };
 
-  // Call this function periodically or before making API requests
-  checkTokenExpiration();
+    checkTokenExpiration();
+  }, [logout]);
 
   return (
     <div>

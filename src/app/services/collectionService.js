@@ -20,18 +20,18 @@ export const getCollectionDocuments = async (formID = 7) => {
   }
 };
 
-export const updateCollectionStatus = async (
-  documentId,
-  collectorDetails
-) => {
+export const updateCollectionStatus = async (documentId, collectorDetails) => {
   try {
+    const payload = { id: documentId, ...collectorDetails };
+    console.log("API Payload:", payload); // Debugging output
+
     const response = await fetch(getApiUrl(COLLECTIONSTATUS), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("authToken")}`,
       },
-      body: JSON.stringify({ id: documentId, ...collectorDetails }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

@@ -3,13 +3,21 @@
 import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { HiOutlinePlusSmall } from "react-icons/hi2";
+import {
+  HiOutlinePlayCircle,
+  HiOutlinePlusCircle,
+  HiOutlinePlusSmall,
+} from "react-icons/hi2";
 import { getLastDocNo, handleSubmit } from "../services/invoiceServices";
 import { getSupplier } from "../services/supplierService";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getUser } from "../services/userService";
 import { useAuth } from "@/src/context/AuthContext";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Tooltip } from "react-tooltip";
+import "react-tooltip/dist/react-tooltip.css";
 
 export default function InvoiceForm() {
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -35,6 +43,7 @@ export default function InvoiceForm() {
 
   const { user } = useAuth();
 
+  const pathname = usePathname();
   const fetchSuppliers = async () => {
     try {
       const response = await getSupplier();
@@ -295,8 +304,18 @@ export default function InvoiceForm() {
               <div className="mt-10 grid grid-cols-4 gap-x-6 gap-y-8 sm:grid-cols-6">
                 {/* Supplier Dropdown */}
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium leading-6 text-gray-900">
+                  <label className="flex items-center  gap-2 text-sm font-medium leading-6 text-gray-900">
                     Supplier
+                    <div>
+                      <Link href={"/suppliers"}>
+                        <HiOutlinePlusCircle
+                          className="text-blue-500 text-lg cursor-pointer"
+                          data-tooltip-id="supplier-tooltip"
+                          data-tooltip-content="Add Supplier"
+                        />
+                      </Link>
+                    </div>
+                    <Tooltip id="supplier-tooltip" place="top" effect="solid" />
                   </label>
                   <div className="mt-2">
                     <select

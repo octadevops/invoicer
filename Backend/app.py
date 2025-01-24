@@ -78,7 +78,7 @@ def login():
             'user_id': user[0],
             'username': user[1],
             'role': user[3],
-            'exp': datetime.now(timezone.utc) + timedelta(hours=1),  # Expires in 1 hour
+            'exp': datetime.now(timezone.utc) + timedelta(hours=2),  # Expires in 1 hour
             'iat': datetime.now(timezone.utc),  # Issued at
             'jti': str(uuid.uuid4()),  # Unique identifier for the token
         }, SECRET_KEY, algorithm='HS256')
@@ -993,21 +993,33 @@ def get_pending_collections():
 
 @app.route('/api/updateCollectionStatus', methods=['POST'])
 def update_collection_status():
-    """
-    Updates the status of a document and records collector details and remarks after validating the PIN.
-    """
+    conn = None
+    cursor = None
     try:
+        # Retrieve JSON data from the request body
         data = request.get_json()
+
+        # Extract fields
         document_id = data.get('id')
         pin = data.get('pin')
-        collector_details = data.get('collectorDetails')
+        collector_details = {
+            "name": data.get('name'),
+            "phone": data.get('phone'),
+            "nic": data.get('nic'),
+            "amount": data.get('amount')
+        }
         remark = data.get('remark')  # Capture the remark
 
-        # Validate authorization
+        # Validate that all required fields are present
+        if not document_id or not pin or not collector_details.get('name') or not collector_details.get('phone') or not collector_details.get('nic') or not collector_details.get('amount'):
+            return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+        # Get the Authorization token
         auth_header = request.headers.get('Authorization')
         if not auth_header:
             return jsonify({"success": False, "message": "Authorization header is missing"}), 401
 
+        # Validate token
         try:
             token = auth_header.split(" ")[1]
             decoded_token = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
@@ -1015,65 +1027,117 @@ def update_collection_status():
         except Exception as e:
             return jsonify({"success": False, "message": f"Invalid token: {str(e)}"}), 401
 
-        # Validate required fields
-        if not document_id or not pin or not collector_details:
-            return jsonify({"success": False, "message": "Missing required fields"}), 400
-
+        # Database connection
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Validate PIN
+        # Check if the user PIN matches the stored PIN
         cursor.execute("SELECT authKey FROM Users WHERE user_id = ?", (user_id,))
         user = cursor.fetchone()
-        if not user or user["authKey"] != pin:
+        if not user or user[0] != pin:  # Access the value using index (0 for authKey)
             return jsonify({"success": False, "message": "Invalid PIN"}), 403
 
-        # Check current document status
+        # Check if the document exists and retrieve the current status
         cursor.execute("SELECT status FROM invDocs WHERE id = ?", (document_id,))
         doc = cursor.fetchone()
         if not doc:
             return jsonify({"success": False, "message": "Document not found"}), 404
 
-        current_status = doc["status"]
+        current_status = doc[0]  # Access status using index (0 for status)
 
-        # Status transition: "3" (Ready for Collection) -> "4" (Collected)
+        # Validate the status transition
         if current_status != "3":
             return jsonify({"success": False, "message": "Invalid status transition"}), 400
 
-        # Update document status and record collector details and remarks
-        collection_date = datetime.now()
-        cursor.execute("""
-            UPDATE invDocs 
-            SET status = ?, collection_date = ?, modified_at = ?, modified_by = ?
-            WHERE id = ? AND status = ?
-        """, ("4", collection_date, collection_date, user_id, document_id, current_status))
+        # Perform the update and insert into Collections
+        collection_date = datetime.now()  # Use UTC time for collection date
+        cursor.execute("""UPDATE invDocs 
+                          SET status = ?,  modified_at = ?, modified_by = ? 
+                          WHERE id = ? AND status = ?""",
+                          ("4", collection_date, user_id,document_id,"3"))
 
-        cursor.execute("""
-            INSERT INTO Collections (document_id, collector_name, collector_phone, collector_nic, amount, collected_by, collected_at, remark)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            document_id,
-            collector_details.get("name"),
-            collector_details.get("phone"),
-            collector_details.get("nic"),
-            collector_details.get("amount"),
-            user_id,
-            collection_date,
-            remark  # Save the remark
-        ))
+        cursor.execute("""INSERT INTO Collections 
+                          (document_id, collector_name, collector_phone, collector_nic, amount, collected_by, collected_at, remark) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                          (document_id,
+                           collector_details.get("name"),
+                           collector_details.get("phone"),
+                           collector_details.get("nic"),
+                           collector_details.get("amount"),
+                           user_id,
+                           collection_date,
+                           remark))
 
+        # Commit the transaction
         conn.commit()
+
         return jsonify({"success": True, "message": "Document marked as collected"}), 200
 
     except Exception as e:
+        app.logger.error(f"Server error: {str(e)}")  # Log the error for debugging
         return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
 
     finally:
-        if cursor:
+        if cursor is not None:
             cursor.close()
-        if conn:
+        if conn is not None:
             conn.close()
 
+
+ 
+
+
+@app.route('/api/getPaymentCollected', methods=['GET'])
+def get_payment_collected():
+    conn = None
+    cursor = None
+    try:
+        # Retrieve the formID from query parameters
+        form_id = request.args.get("formId")
+        if not form_id:
+            return jsonify({"error": "Missing 'formId' in request"}), 400
+
+        # Connect to the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Execute the stored procedure with formID as a parameter
+        cursor.execute("EXEC sp_ManageInvoices @FormID = ?", (form_id,))
+        results = cursor.fetchall()
+
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+        # If no results are returned
+        if not results:
+            return jsonify({"error": "No documents found for the given formId"}), 404
+
+        # Parse results into a list of documents
+        documents = [
+            {
+                "id": row[0],
+                "invoiceNo": row[1],
+                "Company": row[2],
+                "Date": row[3],
+                "Remark": row[4],
+                "Amount": row[5],
+                "Status": row[6],
+                "IsAdvancePayment": row[7],
+                "CreatedUser": row[8],
+                "HandoverDate": row[9],
+                "Receiver": row[10],
+                "Currency": row[11],
+            }
+            for row in results
+        ]
+
+        return jsonify(documents)
+
+    except Exception as e:
+        # Log the error for debugging
+        app.logger.error(f"Error in get_pending_collections: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

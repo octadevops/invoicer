@@ -14,6 +14,7 @@ export default function CollectionsPage() {
   const [documents, setDocuments] = useState([]);
   const [columns, setColumns] = useState([]);
   const [collectionModal, setCollectionModal] = useState(false);
+  const [pinModal, setPinModal] = useState(false); // Pin Modal state
   const [selectedDoc, setSelectedDoc] = useState(null); // Document to approve
   const [collectorDetails, setCollectorDetails] = useState({
     name: "",
@@ -22,6 +23,7 @@ export default function CollectionsPage() {
     amount: "",
     remark: "",
   }); // Collector details
+  const [enteredPin, setEnteredPin] = useState(""); // Pin state
 
   const fetchDocuments = async () => {
     if (!user) {
@@ -85,22 +87,36 @@ export default function CollectionsPage() {
     return true;
   };
 
-  const submitCollectionDetails = async () => {
+  const handleCollectionSubmit = async () => {
     if (!validateCollectorDetails()) {
       toast.error("Please enter valid collector details.");
       return;
     }
 
+    // Open PIN modal before submitting the collection details
+    setPinModal(true);
+  };
+
+  const submitCollectionWithPin = async () => {
+    if (!enteredPin) {
+      toast.error("Please enter your PIN.");
+      return;
+    }
+
     try {
-      // Update collection details and status
-      const response = await updateCollectionStatus(
-        selectedDoc.id,
-        "", // No PIN needed anymore
-        {
-          ...collectorDetails,
-          status: 4, // Mark as collected
-        }
-      );
+      const payload = {
+        name: collectorDetails.name.trim(),
+        phone: collectorDetails.phone.trim(),
+        nic: collectorDetails.nic.trim(),
+        amount: Number(collectorDetails.amount),
+        remark: collectorDetails.remark.trim(),
+        status: 4, // Mark as collected
+        pin: enteredPin, // Include the entered PIN in the request
+      };
+
+      console.log("Submitting payload:", { id: selectedDoc.id, ...payload });
+
+      const response = await updateCollectionStatus(selectedDoc.id, payload);
 
       if (response.success) {
         toast.success("Collection details recorded successfully!");
@@ -112,15 +128,16 @@ export default function CollectionsPage() {
       console.error("Error recording collection details:", error);
       toast.error("Error processing collection details.");
     } finally {
-      setCollectionModal(false); // Close the modal
-      setSelectedDoc(null); // Clear the selected document
+      setPinModal(false); // Close the PIN modal
+      setSelectedDoc(null);
       setCollectorDetails({
         name: "",
         phone: "",
         nic: "",
         amount: "",
         remark: "",
-      }); // Reset collector details
+      });
+      setEnteredPin(""); // Clear entered PIN
     }
   };
 
@@ -227,6 +244,8 @@ export default function CollectionsPage() {
             <input
               type="number"
               value={collectorDetails.amount}
+              min={0}
+              required
               onChange={(e) =>
                 setCollectorDetails({
                   ...collectorDetails,
@@ -256,7 +275,37 @@ export default function CollectionsPage() {
                 Cancel
               </button>
               <button
-                onClick={submitCollectionDetails}
+                onClick={handleCollectionSubmit}
+                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-500"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pin Modal */}
+      {pinModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-sm">
+            <h3 className="text-lg font-semibold mb-4">Enter PIN</h3>
+            <input
+              type="password"
+              value={enteredPin}
+              onChange={(e) => setEnteredPin(e.target.value)}
+              className="block w-full border border-gray-300 rounded py-2 px-3 mb-4"
+              placeholder="Enter PIN"
+            />
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setPinModal(false)}
+                className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitCollectionWithPin}
                 className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-500"
               >
                 Submit
