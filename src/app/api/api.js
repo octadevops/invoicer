@@ -1,33 +1,93 @@
 import ENVIRONMENT from "../config/Config";
 
-const LOGIN_API = {
-  Live: "https://stk.nolimitfashion.com/api/Login/login", // Live;
-  Development: "https://localhost:44301/api/Login/login", // Development;
+const USER = {
+  Live: "https://invapi.nlm.lk/api/users", // Live;
+  Development: "http://localhost:5000/api/users", // Development;
 };
-const LIVE_STOCK = {
-  Live: "https://stk.nolimitfashion.com/api/reports/location-wise", // Live;
-  Development: "https://localhost:44301/api/reports/location-wise", // Development;
+const RECEIVER = {
+  Live: "https://invapi.nlm.lk/api/receivers", // Live;
+  Development: "http://localhost:5000/api/receivers", // Development;
 };
-const FETCH_LOCATION = {
-  Live: "https://apx.nolimit.lk/api/Location/location", // Live;
-  Development: "https://localhost:44301/api/Location/location", // Development;
+const SUPPLIER = {
+  Live: "https://invapi.nlm.lk/api/suppliers", // Live;
+  Development: "http://localhost:5000/api/suppliers", // Development;
 };
-const REPORTS = {
-  Live: "https://stk.nolimitfashion.com/api/Report/GetReport", // Live;
-  Development: "https://localhost:44301/api/Report/GetReport", // Development;
+const LAST_SUP = {
+  Live: "https://invapi.nlm.lk/api/suppliers/last_code", // Live;
+  Development: "http://localhost:5000/api/suppliers/last_code", // Development;
 };
-const FOOTFALLDATA = {
-  Live: "https://apx.nolimit.lk/api/Reports/GetFootFallData", // Live;
-  Development: "https://localhost:44301/api/Reports/GetFootFallData", // Development;
+const INVOICE_DATA = {
+  Live: "https://invapi.nlm.lk/api/invoices", // Live;
+  Development: "http://localhost:5000/api/invoices", // Development;
+};
+const LOGIN = {
+  Live: "https://invapi.nlm.lk/api/login", // Live;
+  Development: "http://localhost:5000/api/login", // Development;
+};
+const GETDATA = {
+  Live: "https://invapi.nlm.lk/api/getFilteredInvoices", // Live;
+  Development: "http://localhost:5000/api/getFilteredInvoices", // Development;
+};
+const GET_APPROVAL_DOCS = {
+  Live: "https://invapi.nlm.lk/api/approval-docs",
+  Development: "http://localhost:5000/api/approval-docs", // Development;
+};
+const UPDATE_APPROVAL = {
+  Live: "https://invapi.nlm.lk/api/updateStatus",
+  Development: "http://localhost:5000/api/updateStatus",
+};
+const USERS = {
+  Live: "https://invapi.nlm.lk/api/getUsers",
+  Development: "http://localhost:5000/api/getUsers",
+};
+const PASSWORDRESET = {
+  Live: "https://invapi.nlm.lk/api/users/<user_id>/reset-password",
+  Development: "http://localhost:5000/api/users/<user_id>/reset-password",
+};
+const AUTHCODERESET = {
+  Live: "https://invapi.nlm.lk/api/users/<user_id>/reset-auth-code",
+  Development: "http://localhost:5000/api/users/<user_id>/reset-auth-code",
+};
+const TRACKER = {
+  Live: "https://invapi.nlm.lk/api/getDocStatus",
+  Development: "http://localhost:5000/api/getDocStatus",
+};
+const DOCSTATUS = {
+  Live: "https://invapi.nlm.lk/api/getPendingDocCount",
+  Development: "http://localhost:5000/api/getPendingDocCount",
+};
+const LASTDOCNO = {
+  Live: "https://invapi.nlm.lk/api/invoices/last-doc-no",
+  Development: "http://localhost:5000/api/invoices/last-doc-no",
+};
+const COLLECTIONSTATUS = {
+  Live: "https://invapi.nlm.lk/api/updateCollectionStatus",
+  Development: "http://localhost:5000/api/updateCollectionStatus",
+};
+const PENDINGCOLLECTIONS = {
+  Live: "https://invapi.nlm.lk/api/getPendingCollections",
+  Development: "http://localhost:5000/api/getPendingCollections",
 };
 
 const getApiUrl = (apiObject) => apiObject[ENVIRONMENT];
 
 export {
-  LOGIN_API,
-  LIVE_STOCK,
-  FETCH_LOCATION,
-  REPORTS,
-  FOOTFALLDATA,
+  INVOICE_DATA,
+  SUPPLIER,
+  USER,
+  LOGIN,
+  LAST_SUP,
+  RECEIVER,
+  GETDATA,
+  GET_APPROVAL_DOCS,
+  UPDATE_APPROVAL,
+  USERS,
+  PASSWORDRESET,
+  AUTHCODERESET,
+  TRACKER,
+  DOCSTATUS,
+  LASTDOCNO,
+  COLLECTIONSTATUS,
+  PENDINGCOLLECTIONS,
   getApiUrl,
 };
