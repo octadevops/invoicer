@@ -3,11 +3,7 @@
 import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import {
-  HiOutlinePlayCircle,
-  HiOutlinePlusCircle,
-  HiOutlinePlusSmall,
-} from "react-icons/hi2";
+import { HiOutlinePlusCircle, HiOutlinePlusSmall } from "react-icons/hi2";
 import { getLastDocNo, handleSubmit } from "../services/invoiceServices";
 import { getSupplier } from "../services/supplierService";
 import { toast, ToastContainer } from "react-toastify";
@@ -15,7 +11,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { getUser } from "../services/userService";
 import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
 
@@ -30,26 +25,21 @@ export default function InvoiceForm() {
   const [image, setImage] = useState(null);
   const [invoiceNo, setInvoiceNo] = useState("");
   const [docNo, setDocNo] = useState("");
-  const [submissionCount] = useState(0);
   const [imageBinary, setImageBinary] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
   const [receivers, setReceivers] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [selectedReceiver, setSelectedReceiver] = useState("");
   const [remark, setRemark] = useState("");
-  // const [isUpdateClicked, setIsUpdateClicked] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [enterInvoiceNumber, setEnterInvoiceNumber] = useState("");
 
   const { user } = useAuth();
 
-  const pathname = usePathname();
   const fetchSuppliers = async () => {
     try {
       const response = await getSupplier();
-      // console.log("fetched suppliers : ", response);
       setSuppliers(response.data || response);
-      // console.log("Suppliers state updated: ", response.data || response);
     } catch (error) {
       toast.error("Error fetching suppliers");
       console.error("Error fetching suppliers", error);
@@ -58,9 +48,7 @@ export default function InvoiceForm() {
   const fetchReceivers = async () => {
     try {
       const response = await getUser();
-      // console.log("fetched users : ", response);
       setReceivers(response.data || response);
-      // console.log("Receivers state updated: ", response.data || response);
     } catch (error) {
       toast.error("Error fetching suppliers");
       console.error("Error fetching suppliers", error);
@@ -109,13 +97,6 @@ export default function InvoiceForm() {
 
   const paymentTerms = ["Net 30", "Net 60", "Due on Receipt", "Custom Terms"];
 
-  // const generateDocNumber = () => {
-  //   const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
-  //   const countStr = (submissionCount + 1).toString().padStart(2, "0");
-  //   const generatedDocNo = `DOC-${dateStr}-${countStr}`;
-  //   return generatedDocNo;
-  // };
-
   const validateForm = () => {
     if (!docNo) {
       toast.error("Document number is not available. Please try again.");
@@ -138,13 +119,7 @@ export default function InvoiceForm() {
 
   const handleNewButtonClick = () => {
     setIsFormVisible(true);
-    // setIsUpdateClicked(false);
   };
-
-  // const handleEditButtonClick = () => {
-  //   setIsUpdateClicked(true);
-  //   setShowInvoiceModal(true);
-  // };
 
   const validateUpdateInput = () => {
     if (!enterInvoiceNumber.trim()) {
