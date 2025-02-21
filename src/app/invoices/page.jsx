@@ -13,15 +13,17 @@ import { useAuth } from "@/src/context/AuthContext";
 import Link from "next/link";
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
+import { PuffLoader } from "react-spinners";
 
 export default function InvoiceForm() {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [handoverDate, setHandoverDate] = useState(null);
+  const [invoiceDate, setInvoiceDate] = useState(null);
   const [amount, setAmount] = useState("");
   const [isAdvancePayment, setIsAdvancePayment] = useState(false); // Change to boolean
-  const [isComplete, setIsComplete] = useState(false);
+  const [isComplete, setIsComplete] = useState(true);
   const [paymentType, setPaymentType] = useState("advance");
-  const [currencyType, setCurrencyType] = useState("");
+  const [currencyType, setCurrencyType] = useState("LKR");
   const [image, setImage] = useState(null);
   const [invoiceNo, setInvoiceNo] = useState("");
   const [docNo, setDocNo] = useState("");
@@ -33,6 +35,7 @@ export default function InvoiceForm() {
   const [remark, setRemark] = useState("");
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [enterInvoiceNumber, setEnterInvoiceNumber] = useState("");
+  const [isDocNoLoading, setIsDocNoLoading] = useState(true);
 
   const { user } = useAuth();
 
@@ -56,36 +59,32 @@ export default function InvoiceForm() {
   };
   const fetchNewDocNo = async () => {
     try {
-      const response = await getLastDocNo(); // API call returns the JSON response
+      setIsDocNoLoading(true);
+      const response = await getLastDocNo();
 
-      console.log("API Response:", response); // Should show { newDocNo: "DOC-20241216-0002" }
-
-      // Check and return 'newDocNo' directly
       if (response && response.newDocNo) {
-        console.log("Generated docNo:", response.newDocNo);
+        setDocNo(response.newDocNo);
         return response.newDocNo;
-      } else {
-        console.error("Invalid response structure", response);
-        return null;
       }
-    } catch (error) {
-      console.error("Error fetching newDocNo", error);
       return null;
+    } catch (error) {
+      console.error("Error fetching newDocNo:", error);
+      return null;
+    } finally {
+      setIsDocNoLoading(false);
     }
   };
 
   useEffect(() => {
     const initializeData = async () => {
       try {
+        await Promise.all([fetchSuppliers(), fetchReceivers()]);
+
         const newDocNo = await fetchNewDocNo();
-        if (newDocNo) {
-          setDocNo(newDocNo); // Bind the docNo to state
-        } else {
+        if (!newDocNo) {
+          console.error("Failed to fetch document number");
           toast.error("Failed to fetch the document number from the server.");
         }
-
-        await fetchSuppliers();
-        await fetchReceivers();
       } catch (error) {
         console.error("Error initializing data", error);
         toast.error("Failed to load initial data.");
@@ -95,7 +94,7 @@ export default function InvoiceForm() {
     initializeData();
   }, []);
 
-  const paymentTerms = ["Net 30", "Net 60", "Due on Receipt", "Custom Terms"];
+  const paymentTerms = ["Due on Receipt", "Net 30", "Net 60", "Custom Terms"];
 
   const validateForm = () => {
     if (!docNo) {
@@ -130,7 +129,7 @@ export default function InvoiceForm() {
   };
 
   const handleModelSubmit = () => {
-    if (!validateUpdateInput()) return; // Stop if validation fails
+    if (!validateUpdateInput()) return;
 
     setInvoiceNo(enterInvoiceNumber);
     setIsFormVisible(true);
@@ -160,6 +159,20 @@ export default function InvoiceForm() {
     }
   };
 
+  const formatAmount = (value) => {
+    if (!value) return "";
+
+    const numericValue = value.toString().replace(/[^\d.]/g, "");
+
+    const parts = numericValue.split(".");
+    if (parts.length > 2) return amount;
+
+    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    const decimalPart = parts.length > 1 ? "." + parts[1] : "";
+
+    return `${integerPart}${decimalPart}`;
+  };
+
   const onFormSubmit = async (e) => {
     e.preventDefault();
 
@@ -167,23 +180,27 @@ export default function InvoiceForm() {
       return;
     }
 
+    const numericAmount = parseFloat(amount.replace(/,/g, "")) || 0;
+
     const invoiceData = {
       invoiceNo: invoiceNo,
+      invoiceDate: invoiceDate,
       docNo: docNo,
-      amount: amount,
+      amount: numericAmount,
       currency: currencyType,
       paymentTerms: paymentType,
       handoverDate: (handoverDate ?? new Date()).toISOString().split("T")[0],
       handoverTo: selectedReceiver,
-      createdBy: {
-        username: user?.username || "Guest", // Pass only the username
-      },
+      createdBy: user?.username || "Guest",
       isAdvancePayment: isAdvancePayment,
       isComplete: isComplete,
       remarks: remark,
       supplierId: selectedSupplier,
       imageBinary: imageBinary,
+      DID: localStorage.getItem("DID"),
     };
+
+    console.log("Submitting invoice data:", invoiceData);
 
     try {
       const result = await handleSubmit(invoiceData);
@@ -191,7 +208,6 @@ export default function InvoiceForm() {
       if (result) {
         toast.success("Invoice created successfully");
 
-        // Clear all the fields
         setAmount("");
         setIsAdvancePayment(false);
         setIsComplete(false);
@@ -199,14 +215,14 @@ export default function InvoiceForm() {
         setImageBinary(null);
         setInvoiceNo("");
         setHandoverDate(null);
+        setInvoiceDate(null);
         setSelectedSupplier("");
         setSelectedReceiver("");
         setRemark("");
 
-        // Fetch a new document number
         const newDocNo = await fetchNewDocNo();
         if (newDocNo) {
-          setDocNo(newDocNo); // Update the docNo with the new value
+          setDocNo(newDocNo);
         } else {
           toast.error("Failed to generate new document number");
         }
@@ -220,12 +236,12 @@ export default function InvoiceForm() {
   return (
     <div>
       <ToastContainer />
-      <div className="flex justify-between items-center mb-4 p-4 border border-cyan-600 rounded-xl">
+      <div className="flex md:flex-row flex-col justify-between items-center mb-4 p-4 border border-cyan-600 rounded-xl">
         <div>
-          <h2 className="text-base font-semibold leading-7 text-gray-900">
+          <h2 className="text-base text-center md:text-left font-semibold leading-7 text-gray-900">
             Invoice Manager
           </h2>
-          <p className="mt-1 text-sm leading-6 text-gray-600">
+          <p className="mt-1 text-sm text-center md:text-left leading-6 text-gray-600">
             This form will be used to register new Suppliers.
           </p>
         </div>
@@ -240,7 +256,6 @@ export default function InvoiceForm() {
         </div>
       </div>
 
-      {/* Invoice Number Modal */}
       {showInvoiceModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white p-4 rounded-lg shadow-lg w-1/3">
@@ -276,8 +291,7 @@ export default function InvoiceForm() {
         >
           <div className="space-y-12 ">
             <div className="border-b border-gray-900/10 pb-12">
-              <div className="mt-10 grid grid-cols-4 gap-x-6 gap-y-8 sm:grid-cols-6">
-                {/* Supplier Dropdown */}
+              <div className="mt-10 md:grid flex flex-col grid-cols-4 gap-x-6 gap-y-8 sm:grid-cols-6">
                 <div className="sm:col-span-2">
                   <label className="flex items-center  gap-2 text-sm font-medium leading-6 text-gray-900">
                     Supplier
@@ -316,24 +330,29 @@ export default function InvoiceForm() {
                   </div>
                 </div>
 
-                {/* Invoice No (Auto-generated) */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Doc. No
                   </label>
                   <div className="mt-2">
-                    <input
-                      type="text"
-                      value={docNo}
-                      readOnly
-                      disabled
-                      placeholder="Fetching document number..."
-                      className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={docNo}
+                        readOnly
+                        disabled
+                        placeholder="Loading..."
+                        className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
+                      />
+                      {isDocNoLoading && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                          <PuffLoader size={20} color="#6366f1" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Invoice Number */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Invoice Number
@@ -347,7 +366,26 @@ export default function InvoiceForm() {
                     />
                   </div>
                 </div>
-                {/* GRN Number */}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium leading-6 text-gray-900">
+                    Invoice Date
+                  </label>
+                  <div className="mt-2 w-full">
+                    <DatePicker
+                      selected={invoiceDate}
+                      onChange={(date) => setInvoiceDate(date)}
+                      className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
+                      dateFormat="yyyy-MM-dd"
+                      maxDate={new Date()}
+                      placeholderText="Select invoice date"
+                      isClearable
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="scroll"
+                    />
+                  </div>
+                </div>
+
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     GRN Number
@@ -360,23 +398,33 @@ export default function InvoiceForm() {
                   </div>
                 </div>
 
-                {/* Amount */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Amount
                   </label>
                   <div className="mt-2">
                     <input
-                      type="number"
-                      step="0.01"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
+                      type="text"
+                      value={formatAmount(amount)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/,/g, "");
+                        if (!isNaN(value) || value === "" || value === ".") {
+                          setAmount(value);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const rawValue = e.target.value.replace(/,/g, "");
+                        if (rawValue) {
+                          const numericValue = parseFloat(rawValue) || 0;
+                          setAmount(numericValue.toFixed(2));
+                        }
+                      }}
+                      className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900 text-right"
+                      placeholder="0.00"
                     />
                   </div>
                 </div>
 
-                {/* Currency */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Currency
@@ -397,7 +445,6 @@ export default function InvoiceForm() {
                   </div>
                 </div>
 
-                {/* Payment Terms */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Payment Terms
@@ -408,6 +455,9 @@ export default function InvoiceForm() {
                       onChange={(e) => setPaymentType(e.target.value)}
                       className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
                     >
+                      <option value="" disabled>
+                        Select Payment Terms
+                      </option>
                       {paymentTerms.map((term) => (
                         <option key={term} value={term}>
                           {term}
@@ -417,7 +467,6 @@ export default function InvoiceForm() {
                   </div>
                 </div>
 
-                {/* Handover Date */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Handover Date
@@ -427,11 +476,18 @@ export default function InvoiceForm() {
                       selected={handoverDate}
                       onChange={(date) => setHandoverDate(date || new Date())}
                       className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
+                      dateFormat="yyyy-MM-dd"
+                      maxDate={new Date()}
+                      placeholderText="Select handover date"
+                      isClearable
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="scroll"
+                      allowSameDay
                     />
                   </div>
                 </div>
 
-                {/* Handover To */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Handover To
@@ -461,7 +517,6 @@ export default function InvoiceForm() {
                   </div>
                 </div>
 
-                {/* Created User (Auto-selected) */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Created By
@@ -477,51 +532,6 @@ export default function InvoiceForm() {
                   </div>
                 </div>
 
-                {/* Created At (Auto-generated) */}
-
-                {/* Advance Payment */}
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium leading-6 text-gray-900">
-                    Advance Payment
-                  </label>
-                  <div className="mt-2">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isAdvancePayment}
-                        onChange={() => setIsAdvancePayment(!isAdvancePayment)}
-                        className="sr-only peer"
-                      />
-                      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                      <span className="ml-3 text-sm font-medium text-gray-900">
-                        {isAdvancePayment ? "" : ""}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Complete Status - Toggle Switch */}
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium leading-6 text-gray-900">
-                    Complete
-                  </label>
-                  <div className="mt-2">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isComplete}
-                        onChange={() => setIsComplete(!isComplete)}
-                        className="sr-only peer"
-                      />
-                      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                      <span className="ml-3 text-sm font-medium text-gray-900">
-                        {isComplete ? "" : ""}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Image Upload */}
                 <div className="sm:col-span-2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -544,7 +554,46 @@ export default function InvoiceForm() {
                   </p>
                 </div>
 
-                {/* Remarks */}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium leading-6 text-gray-900">
+                    Advance Payment
+                  </label>
+                  <div className="mt-2">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isAdvancePayment}
+                        onChange={() => setIsAdvancePayment(!isAdvancePayment)}
+                        className="sr-only peer"
+                      />
+                      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900">
+                        {isAdvancePayment ? "" : ""}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium leading-6 text-gray-900">
+                    Complete
+                  </label>
+                  <div className="mt-2">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isComplete}
+                        onChange={() => setIsComplete(!isComplete)}
+                        className="sr-only peer"
+                      />
+                      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900">
+                        {isComplete ? "" : ""}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
                 <div className="sm:col-span-4">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     Remarks

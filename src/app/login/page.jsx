@@ -180,6 +180,7 @@ export default function LoginPage() {
 
         localStorage.setItem("authToken", data.token); // Store token
         localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("DID", data.user.DID);
 
         login({ token: data.token, user: data.user });
 
@@ -202,11 +203,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-row items-center justify-center min-h-screen bg-gray-900">
+    <div className="flex md:flex-row flex-col items-center justify-center min-h-screen bg-gray-900 p-4 md:p-0">
       {/* Toastify Container */}
       <ToastContainer />
 
-      <div className="w-full max-w-md p-4 space-y-8 bg-slate-100 rounded-l-xl shadow-md h-96 flex flex-col items-center justify-center">
+      <div className="w-full max-w-md p-4 space-y-8 bg-slate-100 md:rounded-l-xl rounded-xl shadow-md h-96 flex flex-col items-center justify-center">
         <h2 className="text-2xl font-bold text-center text-purple-900">
           Login
         </h2>
@@ -254,7 +255,7 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-      <div className="w-full max-w-md p-8 space-y-8 bg-slate-950 rounded-r-xl shadow-md h-96 flex items-center justify-center">
+      <div className="md:w-full max-w-md p-8 space-y-8 bg-slate-950 rounded-r-xl shadow-md h-96 md:flex hidden items-center justify-center">
         <Image
           src={Banner}
           alt="Banner Image"

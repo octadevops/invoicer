@@ -78,25 +78,34 @@ export default function Home() {
     );
 
   return (
-    <div className="flex flex-col gap-4 mb-4 p-4 border border-cyan-600 rounded-xl w-full min-h-screen">
+    <div className="flex flex-col gap-4 mb-4 md:p-4 p-2 border border-cyan-600 rounded-xl w-full min-h-screen">
       {/* Tracker Section */}
       <div className="w-full flex items-center justify-center">
         <Tracker />
       </div>
 
       {/* Cards Section */}
-      <div className="flex items-center justify-center gap-3">
-        <Card title="Receive Pending" className="w-[400px] h-[150px]">
+      <div className="flex md:flex-row flex-col items-center justify-center gap-3">
+        <Card
+          title="Receive Pending"
+          className="md:w-[400px] w-full md:h-[150px]"
+        >
           <div className="text-5xl text-gray-500 font-bold">
             <p>{receivePending}</p>
           </div>
         </Card>
-        <Card title="Ready to Collect Payment" className="w-[400px] h-[150px]">
+        <Card
+          title="Ready to Collect Payment"
+          className="md:w-[400px] w-full md:h-[150px]"
+        >
           <div className="text-5xl text-gray-500 font-bold">
             <p>{readyToCollect}</p>
           </div>
         </Card>
-        <Card title="Total Invoices" className="w-[400px] h-[150px]">
+        <Card
+          title="Total Invoices"
+          className="md:w-[400px] w-full md:h-[150px]"
+        >
           <div className="text-5xl text-gray-500 font-bold">
             <p>{Total}</p>
           </div>

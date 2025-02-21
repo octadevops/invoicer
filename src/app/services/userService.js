@@ -1,6 +1,7 @@
 import { toast } from "react-toastify";
 import {
   AUTHCODERESET,
+  DEPARTMENTS,
   getApiUrl,
   PASSWORDRESET,
   RECEIVER,
@@ -123,6 +124,30 @@ export const getUsers = async () => {
     }
   } catch (error) {
     console.error("Error fetching Users:", error);
+    throw error;
+  }
+};
+
+export const getDepartments = async (formID = 9) => {
+  try {
+    const urlWithParams = `${getApiUrl(DEPARTMENTS)}?formId=${formID}`;
+    console.log("Fetching departments from:", urlWithParams); // Debug log
+
+    const response = await fetch(urlWithParams, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Updated to match the correct token key
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error fetching departments: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log("Departments fetched:", data); // Debug log
+    return data;
+  } catch (error) {
+    console.error("Error fetching departments:", error);
     throw error;
   }
 };
