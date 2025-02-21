@@ -40,6 +40,10 @@ const USERS = {
   Live: "https://invapi.nlm.lk/api/getUsers",
   Development: "http://localhost:5000/api/getUsers",
 };
+const DEPARTMENTS = {
+  Live: "https://invapi.nlm.lk/api/getDepartments",
+  Development: "http://localhost:5000/api/getDepartments",
+};
 const PASSWORDRESET = {
   Live: "https://invapi.nlm.lk/api/users/<user_id>/reset-password",
   Development: "http://localhost:5000/api/users/<user_id>/reset-password",
@@ -89,5 +93,6 @@ export {
   LASTDOCNO,
   COLLECTIONSTATUS,
   PENDINGCOLLECTIONS,
+  DEPARTMENTS,
   getApiUrl,
 };

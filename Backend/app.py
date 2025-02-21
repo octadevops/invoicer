@@ -15,10 +15,15 @@ import uuid
 app = Flask(__name__)
 CORS(app,supports_credentials=True)   
 
+# server = '10.10.100.26'
+# database = 'InvoiceBook'
+# username = 'sa'
+# password = 'tstc123'
+# driver = 'ODBC Driver 17 for SQL Server'
 server = '10.10.100.26'
-database = 'InvoiceBook'
-username = 'sa'
-password = 'tstc123'
+database = 'InvoiceBookStaging'
+username = 'Invoicer'
+password = 'Inv@321++'
 driver = 'ODBC Driver 17 for SQL Server'
 
 
@@ -50,7 +55,7 @@ def login():
         cursor = conn.cursor()
 
         # Check if the user exists
-        cursor.execute("SELECT user_id, username, password, role, isActive FROM Users WHERE username = ?", (username,))
+        cursor.execute("SELECT user_id, username, password, role, isActive,DID FROM Users WHERE username = ?", (username,))
         user = cursor.fetchone()
 
         if not user:
@@ -71,6 +76,7 @@ def login():
             "user_id": user[0],
             "username": user[1],
             "role": user[3],
+            "DID": user[5]
         }
 
         # Generate a unique token for the user
@@ -224,6 +230,7 @@ def create_user():
         isActive = data.get('isActive', False)
         role = data.get('role', 'User')  # Default role if not provided
         authKey = data.get('authKey')
+        DID = data.get('DID')
 
         # Validate required fields
         if not username or not email or not password:
@@ -238,9 +245,9 @@ def create_user():
 
         # Insert user data into the Users table
         cursor.execute("""
-            INSERT INTO Users (user_id, username, email, password, created_at, last_login, isActive, role, authKey)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
-        """, (user_id, username, email, password_hash, created_at, last_login, isActive, role, authKey))
+            INSERT INTO Users (user_id, username, email, password, created_at, last_login, isActive, role, authKey, DID)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, username, email, password_hash, created_at, last_login, isActive, role, authKey, DID))
 
         # Commit the transaction
         conn.commit()
@@ -370,6 +377,8 @@ def insert_invoice():
         is_complete = data.get('isComplete', False)
         payment_type = data.get('paymentType', None)  
         image_binary = data.get('imageBinary', None)  
+        DID = data.get('DID', None)
+        invoiceDate = data.get('invoiceDate', None)
         
         status = 1 if is_complete else 0  # Set status based on is_complete
         
@@ -397,15 +406,15 @@ def insert_invoice():
         insert_query = """
         INSERT INTO invDocs (invoiceNo, docNo, supplier_id, date, GRN, Remark, Amount, currency, payment_terms,
                               handover_date, handover_to, created_user, created_at, isAdvance_payment,
-                              isComplete, status, payment_type, upload_img)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              isComplete, status, payment_type, upload_img, DID, invoiceDate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Execute the query
         cursor.execute(insert_query, (
             invoice_no, docNo, supplier_id, date, grn, remarks, amount, currency, payment_terms,
             handover_date, handover_to, created_user, datetime.now(), 
-            is_advance_payment, is_complete, status, payment_type, image_binary
+            is_advance_payment, is_complete, status, payment_type, image_binary, DID, invoiceDate
         ))
         
         conn.commit()
@@ -1128,6 +1137,48 @@ def get_payment_collected():
                 "HandoverDate": row[9],
                 "Receiver": row[10],
                 "Currency": row[11],
+            }
+            for row in results
+        ]
+
+        return jsonify(documents)
+
+    except Exception as e:
+        # Log the error for debugging
+        app.logger.error(f"Error in get_pending_collections: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+
+@app.route('/api/getDepartments', methods=['GET'])
+def get_departments():
+    try:
+        # Retrieve the formID from query parameters
+        form_id = request.args.get("formId")
+        if not form_id:
+            return jsonify({"error": "Missing 'formId' in request"}), 400
+
+        # Connect to the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Execute the stored procedure with formID as a parameter
+        cursor.execute("EXEC sp_ManageInvoices @FormID = ?", (form_id,))
+        results = cursor.fetchall()
+
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+        # If no results are returned
+        if not results:
+            return jsonify({"error": "No documents found for the given formId"}), 404
+
+        # Parse results into a list of documents
+        documents = [
+            {
+                "DID": row[0],
+                "Department": row[1],
+                "DepartmentCode": row[2],
+                "isActive": row[3],
             }
             for row in results
         ]

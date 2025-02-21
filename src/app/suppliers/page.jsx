@@ -162,12 +162,12 @@ export default function SupplierForm() {
   return (
     <div>
       <ToastContainer />
-      <div className="flex justify-between items-center mb-4 p-4 border border-cyan-600 rounded-xl">
+      <div className="flex md:flex-row flex-col justify-between items-center mb-4 p-4 border border-cyan-600 rounded-xl">
         <div>
-          <h2 className="text-base font-semibold leading-7 text-gray-900">
+          <h2 className="text-base text-center md:text-left font-semibold leading-7 text-gray-900">
             Supplier Manager
           </h2>
-          <p className="mt-1 text-sm leading-6 text-gray-600">
+          <p className="mt-1 text-sm text-center md:text-left leading-6 text-gray-600">
             This form will be used to register new Suppliers.
           </p>
         </div>
@@ -186,7 +186,7 @@ export default function SupplierForm() {
         >
           <div className="space-y-12">
             <div className="border-b border-gray-900/10 pb-12">
-              <div className="mt-10 grid grid-cols-4 gap-x-6 gap-y-8 sm:grid-cols-6">
+              <div className="mt-10  md:grid flex flex-col grid-cols-4 gap-x-6 gap-y-8 sm:grid-cols-6">
                 {/* Supplier Code (Auto-generated) */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">

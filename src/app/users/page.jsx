@@ -12,6 +12,7 @@ import {
   resetUserPassword,
   resetAuthCode,
   getUsers,
+  getDepartments,
 } from "../services/userService";
 import "react-toastify/dist/ReactToastify.css";
 import Modal from "../components/Modal";
@@ -33,6 +34,8 @@ export default function UserForm() {
   const [modalType, setModalType] = useState(""); // "password" or "authCode"
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newValue, setNewValue] = useState("");
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   const openModal = (type, userId) => {
     setModalType(type);
@@ -99,6 +102,10 @@ export default function UserForm() {
       toast.error("Passwords do not match");
       return false;
     }
+    if (!selectedDepartment) {
+      toast.error("Department is required");
+      return false;
+    }
     return true;
   };
 
@@ -126,6 +133,7 @@ export default function UserForm() {
       isActive,
       authKey,
       role: role, //: roleValue,
+      DID: selectedDepartment,
     };
 
     try {
@@ -140,7 +148,9 @@ export default function UserForm() {
         setEmail("");
         setAuthKey("");
         setIsActive(false);
-        window.location.reload();
+        setTimeout(() => {
+          window.location.reload();
+        }, 10000);
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -171,8 +181,20 @@ export default function UserForm() {
       console.error("Error fetching Users", error);
     }
   };
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await getDepartments();
+      setDepartments(response.data || response);
+    } catch (error) {
+      toast.error("Error fetching Users");
+      console.error("Error fetching Users", error);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchDepartments();
   }, []);
 
   return (
@@ -197,12 +219,12 @@ export default function UserForm() {
         </div>
       </Modal>
 
-      <div className="flex justify-between items-center mb-4 p-4 border border-cyan-600 rounded-xl">
+      <div className="flex md:flex-row flex-col justify-between items-center mb-4 p-4 border border-cyan-600 rounded-xl">
         <div>
-          <h2 className="text-base font-semibold leading-7 text-gray-900">
+          <h2 className="text-base text-center md:text-left font-semibold leading-7 text-gray-900">
             User Manager
           </h2>
-          <p className="mt-1 text-sm leading-6 text-gray-600">
+          <p className="mt-1 text-sm text-center md:text-left leading-6 text-gray-600">
             This form will be used to register new users.
           </p>
         </div>
@@ -327,6 +349,33 @@ export default function UserForm() {
                       <option value="Executive">Executive</option>
                       <option value="Receiver">Receiver</option>
                       <option value="Cashier">Cashier</option>
+                    </select>
+                  </div>
+                </div>
+                {/* Department */}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium leading-6 text-gray-900">
+                    Department
+                  </label>
+                  <div className="mt-2 max-h-[150px]">
+                    <select
+                      value={selectedDepartment}
+                      onChange={(e) => setSelectedDepartment(e.target.value)}
+                      className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900 max-h-[150px] overflow-y-auto z-0"
+                      style={{ maxHeight: "150px" }}
+                    >
+                      <option value="" disabled>
+                        Select Department
+                      </option>
+                      {departments.map((dept) => (
+                        <option
+                          key={dept.DID}
+                          value={dept.DID}
+                          className="px-2 max-h-[150px]"
+                        >
+                          {dept.Department}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

@@ -27,39 +27,7 @@ export default function ApprovalPage() {
     }
   }, [isAuthenticated, router]);
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  const fetchDocuments = async () => {
-    if (!user) {
-      toast.error("No user found.");
-      return;
-    }
-
-    try {
-      const username = user?.username || "";
-      let response;
-
-      if (user.role === "Receiver") {
-        response = await getApprovalDocuments(3, username);
-      } else {
-        response = await getApprovalDocuments(3);
-      }
-
-      if (response && response.length > 0) {
-        setDocuments(response);
-        setColumns(Object.keys(response[0]));
-      } else {
-        setDocuments([]);
-        setColumns([]);
-      }
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-      toast.error("Failed to fetch documents.");
-    }
-  };
-
+  // Fetch documents when the user or role changes
   useEffect(() => {
     if (user) {
       if (
@@ -75,19 +43,6 @@ export default function ApprovalPage() {
       toast.error("No user logged in.");
     }
   }, [user]);
-
-  // Decode the JWT token
-  const decodeJwt = (token) => {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  };
 
   // Check token expiration and call logout if invalid
   useEffect(() => {
@@ -120,6 +75,93 @@ export default function ApprovalPage() {
 
     checkTokenExpiration();
   }, [logout]);
+
+  // Check if the user is authenticated and prevent further rendering
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Fetch documents only if the user is authenticated
+  const fetchDocuments = async () => {
+    if (!user) {
+      toast.error("No user found.");
+      return;
+    }
+
+    try {
+      const username = user?.username || "";
+      let response;
+
+      if (user.role === "Receiver") {
+        response = await getApprovalDocuments(3, username);
+      } else {
+        response = await getApprovalDocuments(3);
+      }
+
+      if (response && response.length > 0) {
+        setDocuments(response);
+        setColumns(Object.keys(response[0]));
+      } else {
+        setDocuments([]);
+        setColumns([]);
+      }
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      toast.error("Failed to fetch documents.");
+    }
+  };
+
+  // Handle the action (approve/receive document) with PIN
+  const handleAction = async () => {
+    if (!selectedDoc || !enteredPin) {
+      toast.error("Please enter your PIN.");
+      return;
+    }
+
+    try {
+      const requiredStatus = actionType === "paymentReady" ? "2" : "1"; // Check required status
+      if (selectedDoc.status !== requiredStatus) {
+        toast.error(
+          `Cannot mark as ${
+            actionType === "paymentReady" ? "Payment Ready" : "Received"
+          } without completing the previous step.`
+        );
+        return;
+      }
+
+      const response = await updateDocumentStatus(selectedDoc.id, enteredPin);
+      if (response.success) {
+        toast.success(
+          `Document marked as ${
+            actionType === "paymentReady" ? "Payment Ready" : "Received"
+          }!`
+        );
+        fetchDocuments(); // Refresh the documents list
+      } else {
+        toast.error(response.message || "Failed to update status.");
+      }
+    } catch (error) {
+      console.error("Error approving document:", error);
+      toast.error("Error processing approval.");
+    } finally {
+      setPinModal(false); // Close the modal
+      setSelectedDoc(null);
+      setEnteredPin("");
+    }
+  };
+
+  // Decode the JWT token
+  const decodeJwt = (token) => {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  };
 
   return (
     <div>

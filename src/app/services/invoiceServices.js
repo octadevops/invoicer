@@ -77,7 +77,7 @@ const getLastDocNo = async () => {
     const response = await fetch(apiUrl); // Fetch the API response
     const jsonResponse = await response.json(); // Convert response to JSON
 
-    console.log("NewDocNo:", jsonResponse.newDocNo); // Log the actual 'newDocNo'
+    // console.log("NewDocNo:", jsonResponse.newDocNo); // Log the actual 'newDocNo'
     return jsonResponse; // Return the full JSON response
   } catch (error) {
     console.error("Error fetching last doc no:", error);
