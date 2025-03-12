@@ -5,7 +5,7 @@ function Modal({ isOpen, title, children, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-1/3">
+      <div className="bg-white rounded-lg shadow-lg md:w-1/3">
         <div className="border-b px-4 py-2 flex justify-between items-center">
           <h3 className="text-lg font-semibold">{title}</h3>
           <button onClick={onClose} className="text-red-500 font-bold">

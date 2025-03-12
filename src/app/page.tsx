@@ -5,14 +5,20 @@ import Card from "./components/CardComp";
 import Tracker from "./components/Tracker";
 import { getDocCount } from "./services/dashboardServices"; // Assume this function accepts `formId` as a parameter
 import { PuffLoader } from "react-spinners";
+import SessionAlert from "./components/SessionAlert";
+
+// Define a type for the data
+type DataItem = {
+  Value: number;
+};
 
 export default function Home() {
-  const [receivePending, setReceivePending] = useState(null);
-  const [readyToCollect, setReadyToCollect] = useState(null);
-  const [totalExpenses, setTotalExpenses] = useState(null);
+  const [receivePending, setReceivePending] = useState<number | null>(null);
+  const [readyToCollect, setReadyToCollect] = useState<number | null>(null);
+  const [totalExpenses, setTotalExpenses] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   // Fetch data for a specific formId
   useEffect(() => {
@@ -26,7 +32,7 @@ export default function Home() {
           getDocCount(6), // Fetch data for formId = 6
         ]);
 
-        const extractValue = (data) =>
+        const extractValue = (data: DataItem[]): number =>
           (Array.isArray(data) && data[0]?.Value) || 0;
 
         setReceivePending(extractValue(pending));
@@ -34,7 +40,7 @@ export default function Home() {
         setTotalExpenses(extractValue(expenses));
       } catch (error) {
         console.error("Error fetching data:", error);
-        setError(error);
+        setError(error instanceof Error ? error : new Error("Unknown error"));
       } finally {
         setLoading(false);
       }
@@ -43,7 +49,7 @@ export default function Home() {
     fetchData();
   }, []);
 
-  const formatNumber = (value) => {
+  const formatNumber = (value: number | null): string => {
     if (value == null || isNaN(value)) {
       return "0.00"; // Default for null, undefined, or invalid numbers
     }
@@ -68,30 +74,39 @@ export default function Home() {
   if (error)
     return (
       <div className="flex items-center justify-center min-h-screen text-red-600">
-        <p>Error: {error}</p>
+        <p>Error: {error.message}</p>
       </div>
     );
 
   return (
-    <div className="flex flex-col gap-4 mb-4 p-4 border border-cyan-600 rounded-xl w-full min-h-screen">
+    <div className="flex flex-col gap-4 mb-4 md:p-4 p-2 border border-cyan-600 rounded-xl w-full min-h-screen">
       {/* Tracker Section */}
       <div className="w-full flex items-center justify-center">
         <Tracker />
       </div>
 
       {/* Cards Section */}
-      <div className="flex items-center justify-center gap-3">
-        <Card title="Receive Pending" className="w-[400px] h-[200px]">
+      <div className="flex md:flex-row flex-col items-center justify-center gap-3">
+        <Card
+          title="Receive Pending"
+          className="md:w-[400px] w-full md:h-[150px]"
+        >
           <div className="text-5xl text-gray-500 font-bold">
             <p>{receivePending}</p>
           </div>
         </Card>
-        <Card title="Ready to Collect Payment" className="w-[400px] h-[200px]">
+        <Card
+          title="Ready to Collect Payment"
+          className="md:w-[400px] w-full md:h-[150px]"
+        >
           <div className="text-5xl text-gray-500 font-bold">
             <p>{readyToCollect}</p>
           </div>
         </Card>
-        <Card title="Total Invoices" className="w-[400px] h-[200px]">
+        <Card
+          title="Total Invoices"
+          className="md:w-[400px] w-full md:h-[150px]"
+        >
           <div className="text-5xl text-gray-500 font-bold">
             <p>{Total}</p>
           </div>

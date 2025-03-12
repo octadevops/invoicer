@@ -15,7 +15,7 @@ import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
 import { PuffLoader } from "react-spinners";
 
-export default function InvoiceForm() {
+const POForm = () => {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [handoverDate, setHandoverDate] = useState(null);
   const [invoiceDate, setInvoiceDate] = useState(null);
@@ -239,10 +239,10 @@ export default function InvoiceForm() {
       <div className="flex md:flex-row flex-col justify-between items-center mb-4 p-4 border border-cyan-600 rounded-xl">
         <div>
           <h2 className="text-base text-center md:text-left font-semibold leading-7 text-gray-900">
-            Invoice Manager
+            Purchase Order Manager
           </h2>
           <p className="mt-1 text-sm text-center md:text-left leading-6 text-gray-600">
-            This form will be used to register new Suppliers.
+            This form will be used to create new Purchase Orders.
           </p>
         </div>
         <div className="flex gap-3 items-center justify-center">
@@ -332,7 +332,7 @@ export default function InvoiceForm() {
 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
-                    Doc. No
+                    PO No
                   </label>
                   <div className="mt-2">
                     <div className="relative">
@@ -355,7 +355,7 @@ export default function InvoiceForm() {
 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
-                    Invoice Number
+                    Attendee
                   </label>
                   <div className="mt-2">
                     <input
@@ -368,7 +368,7 @@ export default function InvoiceForm() {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
-                    Invoice Date
+                    Quotation Date
                   </label>
                   <div className="mt-2 w-full">
                     <DatePicker
@@ -377,7 +377,7 @@ export default function InvoiceForm() {
                       className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
                       dateFormat="yyyy-MM-dd"
                       maxDate={new Date()}
-                      placeholderText="Select invoice date"
+                      placeholderText="Select Quotation Date"
                       isClearable
                       showMonthDropdown
                       showYearDropdown
@@ -386,7 +386,7 @@ export default function InvoiceForm() {
                   </div>
                 </div>
 
-                <div className="sm:col-span-2">
+                {/* <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
                     GRN Number
                   </label>
@@ -396,7 +396,7 @@ export default function InvoiceForm() {
                       className="block w-full rounded-md border border-cyan-600 py-1.5 px-2 text-gray-900"
                     />
                   </div>
-                </div>
+                </div> */}
 
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium leading-6 text-gray-900">
@@ -629,4 +629,5 @@ export default function InvoiceForm() {
       )}
     </div>
   );
-}
+};
+export default POForm;

@@ -8,6 +8,7 @@ import {
   updateCollectionStatus,
 } from "../services/collectionService";
 import { useAuth } from "@/src/context/AuthContext";
+import { HiArrowNarrowUp } from "react-icons/hi";
 
 export default function CollectionsPage() {
   const { user } = useAuth(); // Logged-in user
@@ -24,6 +25,8 @@ export default function CollectionsPage() {
     remark: "",
   }); // Collector details
   const [enteredPin, setEnteredPin] = useState(""); // Pin state
+  const [nicError, setNicError] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   const fetchDocuments = async () => {
     if (!user) {
@@ -129,6 +132,7 @@ export default function CollectionsPage() {
       toast.error("Error processing collection details.");
     } finally {
       setPinModal(false); // Close the PIN modal
+      setCollectionModal(false);
       setSelectedDoc(null);
       setCollectorDetails({
         name: "",
@@ -139,6 +143,55 @@ export default function CollectionsPage() {
       });
       setEnteredPin(""); // Clear entered PIN
     }
+  };
+  const handleNICChange = (e) => {
+    let input = e.target.value;
+
+    // Allow only numbers and V/X as input
+    if (!/^[0-9VXvx]*$/.test(input)) {
+      return;
+    }
+
+    // Determine length restrictions based on prefix
+    if (input.startsWith("19") || input.startsWith("20")) {
+      if (input.length > 12) return; // Restrict to 12 characters
+    } else {
+      if (input.length > 10) return; // Restrict to 10 characters
+    }
+
+    setCollectorDetails({ ...collectorDetails, nic: input });
+
+    // Validate NIC format
+    if (/^(19|20)\d{10}$/.test(input)) {
+      setNicError(""); // Valid 12-digit NIC for 19/20 prefix
+    } else if (/^\d{9}[VXvx]$/.test(input)) {
+      setNicError(""); // Valid 9-digit NIC ending with V or X
+    } else {
+      setNicError("Invalid NIC format.");
+    }
+  };
+
+  const sortedDocuments = React.useMemo(() => {
+    if (sortConfig.key) {
+      return [...documents].sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return documents;
+  }, [documents, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
   };
 
   return (
@@ -154,16 +207,24 @@ export default function CollectionsPage() {
                 {columns.map((col) => (
                   <th
                     key={col}
-                    className="px-4 py-2 border border-gray-300 text-left min-w-48"
+                    className="px-4 py-2 border border-gray-300 text-left min-w-48 cursor-pointer"
+                    onClick={() => requestSort(col)}
                   >
                     {col.replace(/_/g, " ")}
+                    {sortConfig.key === col ? (
+                      sortConfig.direction === "asc" ? (
+                        <HiArrowNarrowUp className="ml-3 inline-block" />
+                      ) : (
+                        <HiArrowNarrowUp className="ml-3 inline-block transform rotate-180 duration-300 ease-in-out" />
+                      )
+                    ) : null}
                   </th>
                 ))}
                 <th className="px-4 py-2 border border-gray-300">Action</th>
               </tr>
             </thead>
             <tbody>
-              {documents.map((doc) => (
+              {sortedDocuments.map((doc) => (
                 <tr
                   key={doc.id}
                   className="bg-slate-100 hover:bg-gray-200 text-left min-w-48"
@@ -203,7 +264,7 @@ export default function CollectionsPage() {
       {/* Collector Details Modal */}
       {collectionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm">
+          <div className="bg-white rounded-lg p-6 max-w-lg">
             <h3 className="text-lg font-semibold mb-4">Collector Details</h3>
             <input
               type="text"
@@ -220,27 +281,28 @@ export default function CollectionsPage() {
             <input
               type="text"
               value={collectorDetails.phone}
-              onChange={(e) =>
-                setCollectorDetails({
-                  ...collectorDetails,
-                  phone: e.target.value,
-                })
-              }
+              onChange={(e) => {
+                const input = e.target.value;
+                if (/^\d{0,10}$/.test(input)) {
+                  setCollectorDetails({
+                    ...collectorDetails,
+                    phone: input,
+                  });
+                }
+              }}
               className="block w-full border border-gray-300 rounded py-2 px-3 mb-4"
               placeholder="Phone Number"
             />
             <input
               type="text"
               value={collectorDetails.nic}
-              onChange={(e) =>
-                setCollectorDetails({
-                  ...collectorDetails,
-                  nic: e.target.value,
-                })
-              }
-              className="block w-full border border-gray-300 rounded py-2 px-3 mb-4"
+              onChange={handleNICChange}
+              className="block w-full border border-gray-300 rounded py-2 px-3 mb-1"
               placeholder="NIC Number"
             />
+            {nicError && (
+              <p className="text-red-500 text-sm pb-2 ">{nicError}</p>
+            )}
             <input
               type="number"
               value={collectorDetails.amount}

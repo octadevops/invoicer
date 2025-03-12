@@ -15,10 +15,15 @@ import uuid
 app = Flask(__name__)
 CORS(app,supports_credentials=True)   
 
+# server = '10.10.100.26'
+# database = 'InvoiceBook'
+# username = 'sa'
+# password = 'tstc123'
+# driver = 'ODBC Driver 17 for SQL Server'
 server = '10.10.100.26'
-database = 'InvoiceBook'
-username = 'sa'
-password = 'tstc123'
+database = 'InvoiceBookStaging'
+username = 'Invoicer'
+password = 'Inv@321++'
 driver = 'ODBC Driver 17 for SQL Server'
 
 
@@ -50,7 +55,7 @@ def login():
         cursor = conn.cursor()
 
         # Check if the user exists
-        cursor.execute("SELECT user_id, username, password, role, isActive FROM Users WHERE username = ?", (username,))
+        cursor.execute("SELECT user_id, username, password, role, isActive,DID FROM Users WHERE username = ?", (username,))
         user = cursor.fetchone()
 
         if not user:
@@ -71,6 +76,7 @@ def login():
             "user_id": user[0],
             "username": user[1],
             "role": user[3],
+            "DID": user[5]
         }
 
         # Generate a unique token for the user
@@ -78,7 +84,7 @@ def login():
             'user_id': user[0],
             'username': user[1],
             'role': user[3],
-            'exp': datetime.now(timezone.utc) + timedelta(hours=2),  # Expires in 1 hour
+            'exp': datetime.now(timezone.utc) + timedelta(hours=3),  # Expires in 1 hour
             'iat': datetime.now(timezone.utc),  # Issued at
             'jti': str(uuid.uuid4()),  # Unique identifier for the token
         }, SECRET_KEY, algorithm='HS256')
@@ -103,9 +109,9 @@ def get_suppliers():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT ID, Company FROM Supplier")
+        cursor.execute("SELECT ID, Company,Name,Address, ContactNo, Email FROM Supplier")
         rows = cursor.fetchall()
-        suppliers = [{"id": row[0], "company": row[1]} for row in rows]
+        suppliers = [{"id": row[0], "company": row[1], "name":row[2], "address":row[3],"contactNo":row[4],"email":row[5]} for row in rows]
         return jsonify(suppliers)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -174,8 +180,8 @@ def insert_supplier():
 #     except Exception as e:
 #         return jsonify({"error":str(e)}), 500
 #     finally:
-#         cursor.close()
-#         conn.close()
+#        cursor.close()
+#        conn.close()
 
 
 @app.route('/api/receivers', methods=['GET'])
@@ -224,6 +230,7 @@ def create_user():
         isActive = data.get('isActive', False)
         role = data.get('role', 'User')  # Default role if not provided
         authKey = data.get('authKey')
+        DID = data.get('DID')
 
         # Validate required fields
         if not username or not email or not password:
@@ -238,9 +245,9 @@ def create_user():
 
         # Insert user data into the Users table
         cursor.execute("""
-            INSERT INTO Users (user_id, username, email, password, created_at, last_login, isActive, role, authKey)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
-        """, (user_id, username, email, password_hash, created_at, last_login, isActive, role, authKey))
+            INSERT INTO Users (user_id, username, email, password, created_at, last_login, isActive, role, authKey, DID)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, username, email, password_hash, created_at, last_login, isActive, role, authKey, DID))
 
         # Commit the transaction
         conn.commit()
@@ -370,6 +377,8 @@ def insert_invoice():
         is_complete = data.get('isComplete', False)
         payment_type = data.get('paymentType', None)  
         image_binary = data.get('imageBinary', None)  
+        DID = data.get('DID', None)
+        invoiceDate = data.get('invoiceDate', None)
         
         status = 1 if is_complete else 0  # Set status based on is_complete
         
@@ -397,15 +406,15 @@ def insert_invoice():
         insert_query = """
         INSERT INTO invDocs (invoiceNo, docNo, supplier_id, date, GRN, Remark, Amount, currency, payment_terms,
                               handover_date, handover_to, created_user, created_at, isAdvance_payment,
-                              isComplete, status, payment_type, upload_img)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              isComplete, status, payment_type, upload_img, DID, invoiceDate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         # Execute the query
         cursor.execute(insert_query, (
             invoice_no, docNo, supplier_id, date, grn, remarks, amount, currency, payment_terms,
             handover_date, handover_to, created_user, datetime.now(), 
-            is_advance_payment, is_complete, status, payment_type, image_binary
+            is_advance_payment, is_complete, status, payment_type, image_binary, DID, invoiceDate
         ))
         
         conn.commit()
@@ -1138,6 +1147,441 @@ def get_payment_collected():
         # Log the error for debugging
         app.logger.error(f"Error in get_pending_collections: {e}")
         return jsonify({"error": f"An error occurred: {e}"}), 500
+
+@app.route('/api/getDepartments', methods=['GET'])
+def get_departments():
+    try:
+        # Retrieve the formID from query parameters
+        form_id = request.args.get("formId")
+        if not form_id:
+            return jsonify({"error": "Missing 'formId' in request"}), 400
+
+        # Connect to the database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Execute the stored procedure with formID as a parameter
+        cursor.execute("EXEC sp_ManageInvoices @FormID = ?", (form_id,))
+        results = cursor.fetchall()
+
+        # Close the database connection
+        cursor.close()
+        conn.close()
+
+        # If no results are returned
+        if not results:
+            return jsonify({"error": "No documents found for the given formId"}), 404
+
+        # Parse results into a list of documents
+        documents = [
+            {
+                "DID": row[0],
+                "Department": row[1],
+                "DepartmentCode": row[2],
+                "isActive": row[3],
+            }
+            for row in results
+        ]
+
+        return jsonify(documents)
+
+    except Exception as e:
+        # Log the error for debugging
+        app.logger.error(f"Error in get_pending_collections: {e}")
+        return jsonify({"error": f"An error occurred: {e}"}), 500
+
+@app.route('/api/po/last-po', methods=['GET'])
+def get_last_po_number():
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get current year
+        current_year = datetime.now().year
+
+        # Query to get the last PO number for current year
+        cursor.execute("""
+            SELECT TOP 1 PONumber 
+            FROM PO_Header 
+            WHERE PONumber LIKE ?
+            ORDER BY PONumber DESC
+        """, (f"{current_year}/%",))
+        
+        row = cursor.fetchone()
+        
+        if row:
+            last_number = row[0]
+            # Extract the numeric part
+            sequence_number = int(last_number.split('/')[1]) + 1
+        else:
+            sequence_number = 1
+
+        # Format new PO number
+        new_po_number = f"{current_year}/{str(sequence_number).zfill(4)}"
+        
+        return jsonify({"poNumber": new_po_number}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route('/api/po/create', methods=['POST'])
+def create_purchase_order():
+    conn = None
+    cursor = None
+    try:
+        data = request.get_json()
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Authorization header is missing"}), 401
+
+        token = auth_header.split(" ")[1]
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        created_by = decoded_token['user_id']
+
+        # Start transaction
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Safe float conversion helper
+            def safe_float(value, default=0.0):
+                try:
+                    if value is None or value == '':
+                        return default
+                    if isinstance(value, str):
+                        value = value.replace(',', '')
+                    return float(value)
+                except (ValueError, TypeError):
+                    return default
+
+            # 1. First insert the header
+            header_query = """
+            INSERT INTO PO_Header (
+                PONumber, SID, DID, Attendee, Description, QuotationDate, 
+                Currency, Status, Total, isCreated, Remark,
+                DiscountPercentage, DiscountAmount, VATPercentage, VATAmount,
+                TaxPercentage, TaxAmount, CreatedAt, CreatedBy,
+                isApproved, isCancelled, isPrinted
+            ) OUTPUT INSERTED.POHeaderID
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?)
+            """
+
+            header_values = (
+                data['poNumber'],
+                data['supplierId'],
+                data.get('DID'),
+                data.get('attendee', ''),
+                data.get('description', ''),
+                data['date'],
+                data['currency'],
+                1,  # Status
+                safe_float(data['total']),
+                1,  # isCreated
+                data.get('remark', ''),
+                safe_float(data['discountValue']) if data.get('discountType') == 'percentage' else 0,
+                safe_float(data['discountValue']) if data.get('discountType') == 'amount' else 0,
+                safe_float(data['vatValue']) if data.get('vatType') == 'percentage' else 0,
+                safe_float(data['vatValue']) if data.get('vatType') == 'amount' else 0,
+                safe_float(data['taxValue']) if data.get('taxType') == 'percentage' else 0,
+                safe_float(data['taxValue']) if data.get('taxType') == 'amount' else 0,
+                created_by,
+                0,  # isApproved
+                0,  # isCancelled
+                0   # isPrinted
+            )
+
+            # Execute header insert and get the ID
+            cursor.execute(header_query, header_values)
+            po_header_id = cursor.fetchone()[0]  # Get the inserted ID
+            
+            # 2. Then insert the details using the header ID
+            detail_query = """
+            INSERT INTO PO_Detail (
+                POHeaderID, Description, LineID, Qty, UnitPrice, Total,
+                PaymenTerms, Warranty, AMCTerms, DeliveryTerms, Installation,
+                Validity, CreatedAt, CreatedBy
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?)
+            """
+
+            # Insert each line item
+            for index, item in enumerate(data['items'], 1):  # Start index at 1
+                detail_values = (
+                    po_header_id,  # Use the ID from header insert
+                    item['description'],
+                    index,
+                    safe_float(item['quantity']),
+                    safe_float(item['unitPrice']),
+                    safe_float(item['totalPrice']),
+                    data['terms']['payment'],
+                    data['terms']['warranty'],
+                    data['terms']['amc'],
+                    data['terms']['delivery'],
+                    data['terms']['installation'],
+                    data['terms']['validity'],
+                    created_by
+                )
+                cursor.execute(detail_query, detail_values)
+
+            # If everything succeeded, commit the transaction
+            conn.commit()
+            return jsonify({
+                "message": "Purchase order created successfully",
+                "poHeaderId": po_header_id
+            }), 201
+
+        except Exception as e:
+            # If any error occurs, rollback both inserts
+            if conn:
+                conn.rollback()
+            raise e
+
+    except Exception as e:
+        print(f"Error creating PO: {str(e)}")  # Add logging
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+            
+@app.route('/api/po/approvals', methods=['GET'])
+def get_purchase_orders():
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Execute stored procedure with FormID = 10 for PO listing
+        cursor.execute("EXEC sp_ManageInvoices @FormID = 10")
+        rows = cursor.fetchall()
+        if not rows:
+            return jsonify([])
+
+        # Format the results
+        purchase_orders = []
+        for row in rows:
+            po = {
+                "id": row[0],
+                "poNumber": row[1],
+                "supplierName": row[2],
+                "department": row[3],
+                "attendee": row[4],
+                "description": row[5],
+                "date": row[6].isoformat() if row[6] else None,
+                "currency": row[7],
+                "total": float(row[8]) if row[8] else 0,
+                "status": row[9],
+                "isApproved": bool(row[10]),
+                "remark": row[11],
+                "terms": {
+                    "payment": row[12],
+                    "warranty": row[13],
+                    "delivery": row[14],
+                    "installation": row[15],
+                    "amc": row[16],
+                    "validity": row[17]
+                },
+                "DiscountPercentage": row[18],
+                "DiscountAmount": row[19],
+                "VATPercentage": row[20],
+                "VATAmount": row[21],
+                "TaxPercentage": row[22],                
+                "TaxAmount": row[23],
+            }
+            purchase_orders.append(po)
+
+        return jsonify(purchase_orders)
+
+    except Exception as e:
+        print(f"Error fetching PO list: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route('/api/po/update-status', methods=['POST'])
+def update_po_status():
+    conn = None
+    cursor = None
+    try:
+        data = request.get_json()
+        po_id = data.get('id')
+        pin = data.get('pin')
+        is_print = data.get('isPrint', False)
+
+        if not po_id or (not pin and not is_print):
+            return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+        # Get user info from token
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"success": False, "message": "Authorization required"}), 401
+
+        token = auth_header.split(" ")[1]
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = decoded_token.get('user_id')
+        
+        current_time = datetime.now()
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if is_print:
+            # Update print status
+            cursor.execute("""
+                UPDATE PO_Header 
+                SET isPrinted = 1,
+                    ModifiedAt = ?,
+                    ModifiedBy = ?
+                WHERE POHeaderID = ?
+            """, (current_time, user_id, po_id))
+        else:
+            # Verify PIN first
+            cursor.execute("SELECT authKey FROM Users WHERE user_id = ?", (user_id,))
+            user = cursor.fetchone()
+            if not user or user[0] != pin:
+                return jsonify({"success": False, "message": "Invalid PIN"}), 403
+
+            # Check current PO status
+            cursor.execute("SELECT Status, isApproved FROM PO_Header WHERE POHeaderID = ?", (po_id,))
+            po = cursor.fetchone()
+            if not po:
+                return jsonify({"success": False, "message": "PO not found"}), 404
+
+            if po[1]:  # Check isApproved
+                return jsonify({"success": False, "message": "PO already approved"}), 400
+
+            # Update approval status
+            cursor.execute("""
+                UPDATE PO_Header 
+                SET Status = 2,
+                    isApproved = 1,
+                    ApprovedBy = ?,
+                    ApprovedAt = ?,
+                    ModifiedAt = ?,
+                    ModifiedBy = ?
+                WHERE POHeaderID = ?
+            """, (user_id, current_time, current_time, user_id, po_id))
+
+        conn.commit()
+        return jsonify({
+            "success": True, 
+            "message": "Print status updated successfully" if is_print else "PO approved successfully"
+        }), 200
+
+    except Exception as e:
+        print(f"Error updating PO status: {str(e)}")
+        if conn:
+            conn.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route('/api/po/details', methods=['GET'])
+def get_po_details():
+    conn = None
+    cursor = None
+    try:
+        po_header_id = request.args.get('poHeaderId')
+        
+        if not po_header_id:
+            return jsonify({"error": "Missing POHeaderID parameter"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Execute stored procedure with FormID = 11 for PO details
+            cursor.execute("""
+                EXEC sp_ManageInvoices @FormID = ?, @POHeaderID = ?
+            """, (11, po_header_id))
+            
+            rows = cursor.fetchall()
+            
+            if not rows:
+                return jsonify([])
+                
+            details = [{
+                "PODetaildID": row[0],
+                "poHeaderId": row[1],
+                "description": row[2],
+                "lineId": row[3],
+                "quantity": float(row[4]) if row[4] else 0,
+                "unitPrice": float(row[5]) if row[5] else 0,
+                "total": float(row[6]) if row[6] else 0,
+                "paymentTerms": row[7],
+                "warranty": row[8],
+                "amcTerms": row[9],
+                "deliveryTerms": row[10],
+                "installation": row[11],
+                "validity": row[12]
+               
+            } for row in rows]
+                
+            return jsonify(details)
+
+        except Exception as e:
+            print(f"Error executing stored procedure: {str(e)}")
+            return jsonify({"error": "Error fetching PO details"}), 500
+
+    except Exception as e:
+        print(f"Error in get_po_details: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route('/api/po/approvals/<int:po_id>', methods=['GET'])
+def get_po_by_id(po_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Execute stored procedure with FormID = 12 for single PO fetch
+        cursor.execute("""
+            EXEC sp_ManageInvoices @FormID = 12, @POHeaderID = ?
+        """, (po_id,))
+        
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"error": "Purchase order not found"}), 404
+
+        po = {
+            "id": row[0],
+            "poNumber": row[1],
+            "supplierName": row[2],
+            "supplierId": row[3],
+            # ...add other fields as needed...
+        }
+        
+        return jsonify(po)
+
+    except Exception as e:
+        print(f"Error fetching PO: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)

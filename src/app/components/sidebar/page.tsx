@@ -8,6 +8,7 @@ import {
   HiOutlineCheckCircle,
   HiOutlineClipboardDocumentList,
   HiOutlineDocumentChartBar,
+  HiOutlineDocumentText,
   HiOutlineRectangleGroup,
   HiOutlineUserGroup,
   HiOutlineUsers,
@@ -15,6 +16,7 @@ import {
 import { useAuth } from "@/src/context/AuthContext"; // Import useAuth to access user context
 import { usePathname } from "next/navigation";
 import { HiOutlineCollection } from "react-icons/hi";
+import { LuFileCheck } from "react-icons/lu";
 
 const Sidebar = () => {
   const { user } = useAuth(); // Get the current user from the context
@@ -64,12 +66,24 @@ const Sidebar = () => {
       icon: <HiOutlineCollection />,
       roles: ["Administrator", "Cashier", "Manager"], // Only Receivers can see this
     },
+    {
+      label: "Purchase Order",
+      path: "/po",
+      icon: <HiOutlineDocumentText />,
+      roles: ["Administrator", "Executive", "Manager"], // Only Receivers can see this
+    },
+    {
+      label: "PO Approval",
+      path: "/po-approvals",
+      icon: <LuFileCheck />,
+      roles: ["Administrator", "Manager"], // Only Receivers can see this
+    },
   ];
 
   // Render sidebar items based on the user's role
   return (
     <aside
-      className={`sticky left-0 top-0 ${
+      className={`sticky  left-0 top-0 ${
         collapsed ? "w-16" : "w-64"
       } bg-slate-800 h-screen py-4 px-2 text-slate-100 transition-all duration-300`}
     >

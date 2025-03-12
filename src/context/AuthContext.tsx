@@ -2,6 +2,8 @@
 
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import SessionAlert from "../app/components/SessionAlert";
 
 interface User {
   user_id: string;
@@ -27,13 +29,33 @@ export const useAuth = () => {
   return context;
 };
 
+// Add new interface for session timeout modal
+interface SessionTimeoutModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const SessionTimeoutModal: React.FC<SessionTimeoutModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div>
+      <SessionAlert onClose={onClose} />
+    </div>
+  );
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  const [showTimeoutModal, setShowTimeoutModal] = useState<boolean>(false);
 
-  const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
+  const SESSION_TIMEOUT = 120 * 60 * 1000; // 1 hour in milliseconds
 
   useEffect(() => {
     // Retrieve token and user data from localStorage
@@ -76,9 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const checkSessionTimeout = () => {
-    if (Date.now() - lastActivity > SESSION_TIMEOUT) {
+    if (Date.now() - lastActivity > SESSION_TIMEOUT && !showTimeoutModal) {
       logout();
-      alert("Your session has expired due to inactivity. Please log in again.");
+      setShowTimeoutModal(true);
     }
   };
 
@@ -102,11 +124,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.push("/login");
   };
 
+  const handleTimeoutModalClose = () => {
+    setShowTimeoutModal(false);
+    router.push("/login");
+  };
+
   return (
     <AuthContext.Provider
       value={{ isAuthenticated, setIsAuthenticated, logout, login, user }}
     >
       {children}
+      <SessionTimeoutModal
+        isOpen={showTimeoutModal}
+        onClose={handleTimeoutModalClose}
+      />
     </AuthContext.Provider>
   );
 };

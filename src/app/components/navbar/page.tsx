@@ -22,7 +22,12 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-slate-800 shadow-lg p-4 flex justify-between items-center">
       <div className="text-lg font-bold">
-        <Image src={NavLogo} alt="Logo" className="w-[200px]" unoptimized />
+        <Image
+          src={NavLogo}
+          alt="Logo"
+          className="md:w-[200px] w-[120px]"
+          unoptimized
+        />
       </div>
       <div className="flex items-center space-x-4 text-white">
         {/* <input

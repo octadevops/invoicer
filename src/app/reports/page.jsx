@@ -7,10 +7,9 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getSupplier } from "../services/supplierService";
 import { getInvoices } from "../services/reportServices";
-// import { useAuth } from "@/src/context/AuthContext";
+import { PuffLoader } from "react-spinners";
 
 export default function Reports() {
-  // const { user } = useAuth();
   const [handoverDate, setHandoverDate] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [invoiceNo, setInvoiceNo] = useState("");
@@ -18,6 +17,7 @@ export default function Reports() {
   const [suppliers, setSuppliers] = useState([]);
   const [data, setData] = useState([]); // Table data
   const [previewImg, setPreviewImg] = useState(null); // State for image preview
+  const [isLoading, setIsLoading] = useState(false); // Loading state
 
   // Define column order
   const columns = [
@@ -67,6 +67,7 @@ export default function Reports() {
   // Handle filter form submit
   const handleFilterSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true); // Start loading
     try {
       const filteredData = await getInvoices({
         formId: 1, // Set formId 1 for filter
@@ -85,25 +86,27 @@ export default function Reports() {
     } catch (error) {
       console.error("Error fetching filtered data:", error);
       toast.error("Failed to fetch data");
+    } finally {
+      setIsLoading(false); // Stop loading
     }
   };
 
   return (
     <div>
       <ToastContainer />
-      <div className="flex flex-col justify-between mb-2 p-4 border border-cyan-600 rounded-xl">
+      <div className="flex md:flex-row flex-col justify-between mb-2 p-4 border border-cyan-600 rounded-xl">
         <div className="items-start">
-          <h2 className="text-base font-semibold leading-4 text-gray-900">
+          <h2 className="text-base text-center md:text-left font-semibold leading-4 text-gray-900">
             Finder
           </h2>
-          <p className="mt-1 text-sm leading-4 text-gray-600">
+          <p className="mt-1 text-sm text-center md:text-left leading-4 text-gray-600">
             Filter invoices
           </p>
         </div>
 
         {/* Filter Form */}
         <form onSubmit={handleFilterSubmit} className="p-4">
-          <div className="grid grid-cols-5 gap-x-6 gap-y-8 items-center">
+          <div className="md:grid flex flex-col grid-cols-5 gap-x-6 gap-y-8 items-center">
             {/* Supplier Dropdown */}
             <div className="col-span-1">
               <label className="block text-sm font-medium leading-6 text-gray-900">
@@ -184,7 +187,11 @@ export default function Reports() {
       <div>
         <h2 className="text-lg font-normal mb-4">Report Details</h2>
 
-        {data.length > 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center min-h-[200px]">
+            <PuffLoader color="#4f46e5" size={50} />
+          </div>
+        ) : data.length > 0 ? (
           <div className="overflow-x-auto w-full rounded-xl">
             <table className="w-full table-auto border-collapse border border-gray-300 rounded-lg">
               <thead>
