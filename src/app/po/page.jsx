@@ -2,6 +2,7 @@
 
 import React from "react";
 import PurchaseOrderPDF from "../components/PurchaseOrderPDF";
+import POForm from "../components/POForm";
 
 export default function PurchaseOrder() {
   const purchaseOrderData = {
@@ -34,23 +35,59 @@ export default function PurchaseOrder() {
         unitPrice: "2,000.00",
         totalPrice: "2,000.00",
       },
+      {
+        description:
+          "Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time  ",
+        quantity: 1,
+        unitPrice: "2,000.00",
+        totalPrice: "2,000.00",
+      },
+      {
+        description:
+          "Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time  ",
+        quantity: 1,
+        unitPrice: "2,000.00",
+        totalPrice: "2,000.00",
+      },
+      {
+        description:
+          "Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time  ",
+        quantity: 1,
+        unitPrice: "2,000.00",
+        totalPrice: "2,000.00",
+      },
+      {
+        description:
+          "Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time  ",
+        quantity: 1,
+        unitPrice: "2,000.00",
+        totalPrice: "2,000.00",
+      },
+      {
+        description:
+          "Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time Lead RT 3KVA online UPS with standard backup time  ",
+        quantity: 1,
+        unitPrice: "2,000.00",
+        totalPrice: "2,000.00",
+      },
       // Add more items as needed
     ],
     subTotal: "2,000.00",
     total: "2,000.00",
     discount: "200.00",
     VAT: "100.00",
-    TAX: "100.00",
+    // TAX: "100.00",
     terms: ["Payment: Cash On Delivery", "Warranty Period: 2 Years"],
     signatureName: "A A A Nafih",
     signatureTitle: "General Manager",
-    logo: "/logo.png",  // Add logo path
+    logo: "/logo.png", // Add logo path
   };
 
   return (
-    <div className="p-4 max-w-[1200px] mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Purchase Order Preview</h1>
-      <PurchaseOrderPDF purchaseOrder={purchaseOrderData} />
+    <div className="">
+      <POForm />
+      {/* <h1 className="text-2xl font-bold mb-4">Purchase Order Preview</h1>
+      <PurchaseOrderPDF purchaseOrder={purchaseOrderData} /> */}
     </div>
   );
 }

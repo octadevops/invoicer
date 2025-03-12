@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/src/context/AuthContext"; // Import useAuth to access user context
 import { usePathname } from "next/navigation";
 import { HiOutlineCollection } from "react-icons/hi";
+import { LuFileCheck } from "react-icons/lu";
 
 const Sidebar = () => {
   const { user } = useAuth(); // Get the current user from the context
@@ -70,6 +71,12 @@ const Sidebar = () => {
       path: "/po",
       icon: <HiOutlineDocumentText />,
       roles: ["Administrator", "Executive", "Manager"], // Only Receivers can see this
+    },
+    {
+      label: "PO Approval",
+      path: "/po-approvals",
+      icon: <LuFileCheck />,
+      roles: ["Administrator", "Manager"], // Only Receivers can see this
     },
   ];
 

@@ -72,6 +72,37 @@ const PENDINGCOLLECTIONS = {
   Live: "https://invapi.nlm.lk/api/getPendingCollections",
   Development: "http://localhost:5000/api/getPendingCollections",
 };
+const LASTPONO = {
+  Live: "https://invapi.nlm.lk/api/po/last-po",
+  Development: "http://localhost:5000/api/po/last-po",
+};
+const CREATEPO = {
+  Live: "https://invapi.nlm.lk/api/po/create",
+  Development: "http://localhost:5000/api/po/create",
+};
+
+const GETPO = {
+  Live: "https://invapi.nlm.lk/api/po/approvals",
+  Development: "http://localhost:5000/api/po/approvals",
+};
+
+const GETPODETAILS = {
+  Live: "https://invapi.nlm.lk/api/po/details",
+  Development: "http://localhost:5000/api/po/details",
+};
+
+const UPDATEPO = {
+  Live: "https://invapi.nlm.lk/api/po/update-status",
+  Development: "http://localhost:5000/api/po/update-status",
+};
+const GETPOBYID = {
+  Live: "https://invapi.nlm.lk/api/po/approvals/{id}",
+  Development: "http://localhost:5000/api/po/approvals/{id}",
+};
+const GETSUPPLIERBYID = {
+  Live: "https://invapi.nlm.lk/api/suppliers/{id}",
+  Development: "http://localhost:5000/api/suppliers/{id}",
+};
 
 const getApiUrl = (apiObject) => apiObject[ENVIRONMENT];
 
@@ -94,5 +125,12 @@ export {
   COLLECTIONSTATUS,
   PENDINGCOLLECTIONS,
   DEPARTMENTS,
+  LASTPONO,
+  CREATEPO,
+  GETPO,
+  GETPODETAILS,
+  UPDATEPO,
+  GETPOBYID,
+  GETSUPPLIERBYID,
   getApiUrl,
 };
